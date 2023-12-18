@@ -64,6 +64,9 @@
 #ifndef TRAINING
 #define TRAINING 0
 #endif
+#ifndef M_PI
+# define M_PI		3.14159265358979323846	/* pi */
+#endif // !M_PI
 
 
 /* The built-in model, used if no file is given as input */
@@ -539,7 +542,14 @@ int main(int argc, char **argv) {
   }
   f1 = fopen(argv[1], "r");
   f2 = fopen(argv[2], "r");
-  maxCount = atoi(argv[3]);
+  
+   if (f1==NULL || f2==NULL)
+  {
+      printf("Cannot open file...\n");
+      return -1;
+  }
+
+ maxCount = atoi(argv[3]);
   for(i=0;i<150;i++) {
     short tmp[FRAME_SIZE];
     fread(tmp, sizeof(short), FRAME_SIZE, f2);
