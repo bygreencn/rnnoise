@@ -96,8 +96,11 @@ void celt_fir(
          int ord)
 {
    int i,j;
-   //opus_val16 rnum[ord];
-   opus_val16 *rnum = (opus_val16*)malloc( sizeof(opus_val16) * ord);	// MSVC doesn't support VLA
+#ifdef USE_MALLOC
+   opus_val16 *rnum = (opus_val16*)malloc( sizeof(opus_val16) * ord);
+#else
+   opus_val16 rnum[ord];
+#endif
    for(i=0;i<ord;i++)
       rnum[i] = num[ord-i-1];
    for (i=0;i<N-3;i+=4)
@@ -120,7 +123,10 @@ void celt_fir(
          sum = MAC16_16(sum,rnum[j],x[i+j-ord]);
       y[i] = ROUND16(sum, SIG_SHIFT);
    }
+
+#ifdef USE_MALLOC
    free(rnum);
+#endif
 }
 
 void celt_iir(const opus_val32 *_x,
@@ -146,14 +152,16 @@ void celt_iir(const opus_val32 *_x,
       mem[0] = SROUND16(sum, SIG_SHIFT);
       _y[i] = sum;
    }
-#else
+#else //SMALL_FOOTPRINT
    int i,j;
    celt_assert((ord&3)==0);
-   //opus_val16 rden[ord];
-   //opus_val16 y[N+ord];
-   opus_val16 *rden = (opus_val16*)malloc(ord * sizeof(opus_val16));
-   opus_val16 *y = (opus_val16*)malloc( (N + ord) * sizeof(opus_val16));
-
+#ifdef USE_MALLOC
+   opus_val16 *rden = (opus_val16*)malloc(sizeof(opus_val16) * ord);
+   opus_val16 *y = (opus_val16*)malloc(sizeof(opus_val16) * (N + ord));
+#else
+   opus_val16 rden[ord];
+   opus_val16 y[N+ord];
+#endif
    for(i=0;i<ord;i++)
       rden[i] = den[ord-i-1];
    for(i=0;i<ord;i++)
@@ -197,9 +205,11 @@ void celt_iir(const opus_val32 *_x,
    }
    for(i=0;i<ord;i++)
       mem[i] = _y[N-i-1];
+#ifdef USE_MALLOC
    free(rden);
-   free(y);
+   free(y) ;
 #endif
+#endif // SMALL_FOOTPRINT
 }
 
 int _celt_autocorr(
@@ -215,7 +225,11 @@ int _celt_autocorr(
    int fastN=n-lag;
    int shift;
    const opus_val16 *xptr;
+#ifdef USE_MALLOC
    opus_val16 *xx = malloc(sizeof(opus_val16) * n);
+#else
+   opus_val16 xx[n];
+#endif
    celt_assert(n>0);
    celt_assert(overlap>=0);
    if (overlap == 0)
@@ -281,6 +295,10 @@ int _celt_autocorr(
       shift += shift2;
    }
 #endif
+
+#ifdef USE_MALLOC
    free(xx);
+#endif
+
    return shift;
 }

@@ -43,6 +43,10 @@
 #include "celt_lpc.h"
 #include "math.h"
 
+#ifdef USE_MALLOC
+#include <stdlib.h>
+#endif
+
 static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
                             int max_pitch, int *best_pitch
 #ifdef FIXED_POINT
@@ -297,13 +301,15 @@ void pitch_search(const opus_val16 *x_lp, opus_val16 *y,
    celt_assert(max_pitch>0);
    lag = len+max_pitch;
 
-   opus_val16 *x_lp4 = (opus_val16 *)malloc( (len >> 2) * sizeof(opus_val16) ) ;	
-   opus_val16 *y_lp4 = (opus_val16 *)malloc( (lag >> 2) * sizeof(opus_val16) ) ;
-   opus_val32 *xcorr = (opus_val32 *)malloc((max_pitch>>1) * sizeof(opus_val32) );
-
-   //opus_val16 x_lp4[len>>2];
-   //opus_val16 y_lp4[lag>>2];
-   //opus_val32 xcorr[max_pitch>>1];
+#ifdef USE_MALLOC
+   opus_val16 *x_lp4 = malloc(sizeof(opus_val16) * len>>2);
+   opus_val16 *y_lp4 = malloc(sizeof(opus_val16) * lag>>2);
+   opus_val32 *xcorr = malloc(sizeof(opus_val32) * max_pitch>>1);
+#else
+   opus_val16 x_lp4[len>>2];
+   opus_val16 y_lp4[lag>>2];
+   opus_val32 xcorr[max_pitch>>1];
+#endif
 
    /* Downsample by 2 again */
    for (j=0;j<len>>2;j++)
@@ -387,9 +393,11 @@ void pitch_search(const opus_val16 *x_lp, opus_val16 *y,
    }
    *pitch = 2*best_pitch[0]-offset;
 
+#ifdef USE_MALLOC
    free(x_lp4);
    free(y_lp4);
    free(xcorr);
+#endif
 }
 
 #ifdef FIXED_POINT
@@ -451,9 +459,11 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
       *T0_=maxperiod-1;
 
    T = T0 = *T0_;
-   //opus_val32 yy_lookup[maxperiod+1];
-   opus_val32 *yy_lookup = (opus_val32*)malloc(sizeof(opus_val32) * (maxperiod+1) );
-
+#ifdef USE_MALLOC
+   opus_val32 *yy_lookup = malloc(sizeof(opus_val32) * (maxperiod+1));
+#else
+   opus_val32 yy_lookup[maxperiod+1];
+#endif
    dual_inner_prod(x, x, x-T0, N, &xx, &xy);
    yy_lookup[0] = xx;
    yy=xx;
@@ -533,6 +543,9 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
    if (*T0_<minperiod0)
       *T0_=minperiod0;
 
+#ifdef USE_MALLOC
    free(yy_lookup);
+#endif
+
    return pg;
 }

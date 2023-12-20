@@ -1,0 +1,11 @@
+prefix=@PC_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: rnnoise
+Description: rnnoise
+Version: 1
+
+Libs: -L${libdir} -lrnnoise
+Cflags: -I${includedir}
